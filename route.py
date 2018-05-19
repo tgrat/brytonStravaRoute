@@ -4,7 +4,7 @@ import math
 import fileinput
 import sqlite3
 import shutil
-
+import string
 # def uploadRoute(file)
     
 def dist_lat_lon(file):
@@ -14,7 +14,7 @@ def dist_lat_lon(file):
         lat = []
         lon=  []
         for ln in fi:
-            if ln.startswith("   <trkpt"):
+            if ln.lstrip().startswith("<trkpt"):
                 lat.append(math.radians(float(re.search("lat=\"(-?\d+.\d+)",ln).group(1))))
                 lon.append(math.radians(float(re.search("lon=\"(-?\d+.\d+)",ln).group(1))))
                 
@@ -34,10 +34,15 @@ def change_format(file, routenum, dist, lat, lon):
         for ln in fi:
             i += 1
             line.append(ln)
-            
-            if ln.startswith(" <trk>"):
+
+    i = 0
+    with open(file) as fi:
+        for ln in fi:
+            i += 1
+            if ln.lstrip().startswith("<trkpt"):
                 trk = i
                 print trk
+                break
 
     with open("route-%s.gpx" %(str(routenum)),"w+") as fo:
         
@@ -59,8 +64,9 @@ def change_format(file, routenum, dist, lat, lon):
         fo.write("<rtept lat=\"%f\" lon=\"%f\"/>\n" % (math.degrees(lat[len(lat)-1]), math.degrees(lon[len(lon)-1])))
         fo.write("</rte>\n")
         fo.write("<trk>\n")
+        fo.write("<trkseg>\n")
 
-        for i in xrange(trk+3,len(line)):
+        for i in xrange(trk-1,len(line)): #CHANGE
             fo.write("%s" %(line[i]))
 
             # if "<name>" in ln and flag==0:
@@ -101,7 +107,6 @@ def sql_insert(routenum,name,dist):
     columns = ', '.join(map(str, data.keys()))
     values = ', '.join(map(repr, data.values()))
     c.execute("INSERT INTO Route ({}) VALUES ({})".format(columns, values))
-
     conn.commit()
     conn.close()
 
